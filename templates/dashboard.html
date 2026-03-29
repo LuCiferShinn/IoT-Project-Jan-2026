@@ -165,34 +165,24 @@
     const neonGreen = "#39ff14";
 
     // Initialize Map
-    const map = L.map("map", { zoomControl: false }).setView([4.5, 101.0], 8);
+    const map = L.map("map", { zoomControl: false }).setView([4.5, 101.0], 6); // Zoomed out slightly to see more
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
     async function loadData() {
         try {
-            // 1. Fetch REAL KPI Summary from Flask
+            // 1. Fetch KPI Summary
             const summaryRes = await fetch('/api/summary');
             const summaryData = await summaryRes.json();
-            
             document.getElementById('totalVal').innerText = summaryData.total_flights;
             document.getElementById('altVal').innerText = summaryData.average_altitude + "m";
             document.getElementById('velVal').innerText = summaryData.average_velocity + "m/s";
 
-            // 2. Fetch REAL Hourly Data for the chart
-            const hourRes = await fetch('/api/flights_per_hour');
-            const hourData = await hourRes.json();
-
-            // 3. Render charts with real data
-            renderCharts(hourData.hours, hourData.counts);
-
-            // Fetch table data (Optional: using top countries as fallback since it's fast)
+            // 2. Fetch Table Data
             const tableRes = await fetch('/api/departure_airports');
             const tableData = await tableRes.json();
-            
             const airportTable = document.getElementById('airportTable');
-            airportTable.innerHTML = ""; // Clear old data
-            
-            tableData.forEach((row, i) => {
+            airportTable.innerHTML = "";
+            tableData.forEach((row) => {
                 airportTable.innerHTML += `
                     <tr>
                         <td class="neon-text">${row.icao || 'N/A'}</td>
@@ -201,50 +191,98 @@
                     </tr>`;
             });
 
+            // 3. Fetch Map Data and Plot Dots
+            const mapRes = await fetch('/api/map_data');
+            const mapData = await mapRes.json();
+            
+            mapData.forEach(flight => {
+                if(flight.latitude && flight.longitude) {
+                    L.circleMarker([flight.latitude, flight.longitude], {
+                        radius: 3,
+                        color: neonGreen,
+                        fillColor: neonGreen,
+                        fillOpacity: 0.8,
+                        weight: 1
+                    }).addTo(map);
+                }
+            });
+
+            // 4. Fetch All Chart Data
+            const hourRes = await fetch('/api/flights_per_hour');
+            const hourData = await hourRes.json();
+
+            const dayRes = await fetch('/api/flights_per_day');
+            const dayData = await dayRes.json();
+
+            const altRes = await fetch('/api/altitude_distribution');
+            const altData = await altRes.json();
+
+            const velRes = await fetch('/api/velocity_distribution');
+            const velData = await velRes.json();
+
+            // 5. Render charts
+            renderCharts(hourData, dayData, altData, velData);
+
         } catch (error) {
             console.error("Error loading data from API:", error);
         }
     }
 
-    // Helper function to create fresh config for each chart
+    // Helper function to format charts properly (including radar)
     function getConfig(type, labels, data) {
+        let options = {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        };
+
+        if (type === 'radar') {
+            // Radar charts need a radial 'r' scale instead of x/y
+            options.scales = {
+                r: { 
+                    grid: { color: 'rgba(75, 0, 130, 0.5)' },
+                    angleLines: { color: 'rgba(75, 0, 130, 0.5)' },
+                    pointLabels: { color: "#d1c4e9", font: { size: 10 } },
+                    ticks: { display: false } // Hide inner numbers for a cleaner cyberpunk look
+                }
+            };
+        } else {
+            // Standard line/bar chart scales
+            options.scales = {
+                x: { grid: { display: false } },
+                y: { grid: { color: 'rgba(75, 0, 130, 0.3)' }, beginAtZero: true }
+            };
+        }
+
         return {
             type: type,
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Flight Data',
+                    label: 'Metrics',
                     borderColor: neonGreen,
-                    backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                    backgroundColor: 'rgba(57, 255, 20, 0.15)',
+                    pointBackgroundColor: neonGreen,
+                    pointBorderColor: '#000',
                     data: data,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4 // Smooth curves
                 }]
             },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: type === 'radar' ? {} : {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(75, 0, 130, 0.3)' }, beginAtZero: true }
-                }
-            }
+            options: options
         };
     }
 
-    function renderCharts(hourLabels, hourCounts) {
-        // Destroy old charts if they exist to prevent hover glitches
+    function renderCharts(hourData, dayData, altData, velData) {
+        // Destroy old charts to prevent hover glitches
         Chart.helpers.each(Chart.instances, function(instance){
             instance.destroy();
         });
 
-        // Use real data for the first chart, placeholder for the rest until we wire them up
-        new Chart(document.getElementById('hourChart'), getConfig('line', hourLabels, hourCounts));
-        new Chart(document.getElementById('dayChart'), getConfig('bar', ['M', 'T', 'W', 'T', 'F', 'S', 'S'], [10, 20, 15, 30, 25, 40, 35]));
-        new Chart(document.getElementById('altChart'), getConfig('line', ['0-1k', '1k-3k', '3k-6k'], [50, 100, 75]));
-        
-        // Radar charts need a specific scale setup, so we pass default data
-        new Chart(document.getElementById('velChart'), getConfig('radar', ['0-100', '100-200', '200-300'], [10, 50, 20]));
+        // Initialize all charts with real database data
+        new Chart(document.getElementById('hourChart'), getConfig('line', hourData.hours, hourData.counts));
+        new Chart(document.getElementById('dayChart'), getConfig('bar', dayData.days, dayData.counts));
+        new Chart(document.getElementById('altChart'), getConfig('line', altData.ranges, altData.counts));
+        new Chart(document.getElementById('velChart'), getConfig('radar', velData.ranges, velData.counts));
     }
 
     window.onload = loadData;
