@@ -196,6 +196,51 @@ tr:hover td {
     color: var(--text-dim);
     margin-bottom: 6px;
 }
+
+.dashboard-new {
+    display: grid;
+    grid-template-rows: auto 2fr 2fr 1.5fr;
+    gap: 12px;
+    padding: 12px;
+    height: 100vh;
+}
+
+/* KPI */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+/* Top charts */
+.top-charts {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+}
+
+.big {
+    grid-column: span 1;
+}
+
+/* Middle */
+.middle-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+}
+
+.map-card #map {
+    height: 100%;
+}
+
+/* Bottom */
+.bottom-charts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+        
 </style>
 </head>
 <body>
@@ -269,53 +314,6 @@ tr:hover td {
 
 </div>
 
-    <style>
-
-.dashboard-new {
-    display: grid;
-    grid-template-rows: auto 2fr 2fr 1.5fr;
-    gap: 12px;
-    padding: 12px;
-    height: 100vh;
-}
-
-/* KPI */
-.kpi-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-/* Top charts */
-.top-charts {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 10px;
-}
-
-.big {
-    grid-column: span 1;
-}
-
-/* Middle */
-.middle-section {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 10px;
-}
-
-.map-card #map {
-    height: 100%;
-}
-
-/* Bottom */
-.bottom-charts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-</style>
 
 <script>
    Chart.defaults.color = "#cbb6ff";
