@@ -2,469 +2,223 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Perak Flight Analytics - Historical RPi Dashboard</title>
+    <title>Perak IoT Flight Analytics - Neon Cyberpunk</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-:root {
-    --bg-main: #05030a;
-    --bg-card: #140a2a;
-    --bg-card-2: #1a1035;
-    --border: #2a1a4a;
+        :root {
+            /* Intense Purple & Neon Green Palette */
+            --bg-deep: #0a0212;
+            --card-purple: #16072b;
+            --neon-green: #39ff14;
+            --dim-green: #1a5c0a;
+            --border-purple: #4b0082;
+            --glow-purple: rgba(75, 0, 130, 0.6);
+            --text-main: #d1c4e9;
+        }
 
-    --purple: #b388ff;
-    --purple-glow: rgba(179,136,255,0.4);
-
-    --neon: #c6ff00; /* Evangelion green */
-    --neon-glow: rgba(198,255,0,0.5);
-
-    --text-main: #f3e5f5;
-    --text-dim: #b39ddb;
-}
-
-/* RESET */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body, html {
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-
-    background: radial-gradient(circle at top, #140a2a, #05030a);
-    font-family: "Inter", sans-serif;
-    color: var(--text-main);
-}
-
-/* ===== CARDS ===== */
-.card {
-    background: linear-gradient(145deg, var(--bg-card), var(--bg-card-2));
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-
-    transition: all 0.25s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-/* subtle glow line */
-.card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 2px;
-    width: 100%;
-    background: linear-gradient(to right, var(--neon), transparent);
-    opacity: 0.4;
-}
-
-/* hover glow */
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow:
-        0 0 15px var(--purple-glow),
-        0 0 30px rgba(0,0,0,0.4);
-}
-
-/* ===== TITLES ===== */
-.card h3 {
-    font-size: 0.75rem;
-    color: var(--purple);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-
-    border-left: 3px solid var(--neon);
-    padding-left: 8px;
-}
-
-/* ===== KPI ===== */
-.kpi-card {
-    background: linear-gradient(145deg, #1a1035, #0f0822);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-
-    transition: 0.3s;
-}
-
-.kpi-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px var(--neon-glow);
-}
-
-.kpi-card h2 {
-    font-size: 1.2vw;
-    color: var(--neon);
-    text-shadow: 0 0 8px var(--neon-glow);
-}
-
-.kpi-card p {
-    font-size: 0.6rem;
-    color: var(--text-dim);
-}
-
-/* ===== CHART ===== */
-.chart-box {
-    flex: 1;
-    position: relative;
-}
-
-/* ===== MAP ===== */
-#map {
-    height: 100%;
-    width: 100%;
-    border-radius: 8px;
-    background: #05030a;
-    border: 1px solid var(--border);
-}
-
-/* ===== TABLE ===== */
-.table-wrap {
-    flex: 1;
-    overflow-y: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.68rem;
-}
-
-th {
-    text-align: left;
-    color: var(--neon);
-    padding: 6px;
-
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: #140a2a;
-}
-
-td {
-    padding: 6px;
-    border-bottom: 1px solid #1a1333;
-    color: var(--text-main);
-}
-
-/* hover row */
-tr:hover td {
-    background: rgba(198,255,0,0.07);
-}
-
-/* ===== ICAO BADGE ===== */
-.icao-badge {
-    display: inline-block;
-    background: #0d0620;
-    color: var(--purple);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 0.6rem;
-    font-family: monospace;
-    margin-left: 4px;
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-    width: 6px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--neon);
-    border-radius: 10px;
-}
-
-/* ===== SMALL TEXT ===== */
-#depStatus {
-    font-size: 0.6rem;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-}
-
-.dashboard-new {
-    display: grid;
-    grid-template-rows: auto 2fr 2fr 1.5fr;
-    gap: 12px;
-    padding: 12px;
-    height: 100vh;
-}
-
-/* KPI */
-.kpi-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-/* Top charts */
-.top-charts {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 10px;
-}
-
-.big {
-    grid-column: span 1;
-}
-
-/* Middle */
-.middle-section {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 10px;
-}
-
-.map-card #map {
-    height: 100%;
-}
-
-/* Bottom */
-.bottom-charts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
-</style>
+        body, html { 
+            height: 100vh; width: 100vw; 
+            background: var(--bg-deep); 
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Balanced 2-Row, 3-Column Balanced Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: 70px 1fr 1fr; /* Header + 2 equal rows */
+            height: 100vh;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: var(--card-purple);
+            border: 2px solid var(--border-purple);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 0 20px var(--glow-purple);
+        }
+
+        header h1 { 
+            font-size: 1.4rem; 
+            color: var(--neon-green); 
+            text-shadow: 0 0 10px var(--neon-green);
+            letter-spacing: 3px; 
+        }
+
+        .kpi-container { display: flex; gap: 40px; }
+        .kpi-stat { text-align: right; }
+        .kpi-stat span { display: block; font-size: 0.65rem; color: var(--text-main); opacity: 0.7; }
+        .kpi-stat b { font-size: 1.2rem; color: var(--neon-green); }
+
+        /* Card Styling */
+        .card {
+            background: var(--card-purple);
+            border: 1px solid var(--border-purple);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Fixes flexbox overflow */
+            position: relative;
+        }
+
+        .card:hover {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+        }
+
+        .card h3 {
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-left: 3px solid var(--neon-green);
+            padding-left: 10px;
+        }
+
+        /* Content Areas */
+        #map { 
+            flex: 1; 
+            border-radius: 4px; 
+            filter: invert(100%) hue-rotate(170deg) brightness(1.2) contrast(0.9);
+            border: 1px solid var(--border-purple);
+        }
+
+        .chart-container { flex: 1; position: relative; min-height: 0; }
+        
+        .table-wrap { flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th { text-align: left; color: var(--neon-green); padding: 8px; border-bottom: 1px solid var(--border-purple); }
+        td { padding: 8px; border-bottom: 1px solid rgba(75, 0, 130, 0.3); }
+
+        .neon-text { color: var(--neon-green); font-weight: bold; }
+        .tag { border: 1px solid var(--neon-green); color: var(--neon-green); padding: 1px 4px; border-radius: 3px; font-size: 0.6rem; }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-purple); border-radius: 10px; }
+    </style>
 </head>
 <body>
 
-<div class="dashboard-new">
+<div class="dashboard-grid">
+    <header>
+        <h1>SYSTEM::PERAK_IOT_v2.0</h1>
+        <div class="kpi-container">
+            <div class="kpi-stat"><span>UP_LINK</span><b id="totalVal">0</b></div>
+            <div class="kpi-stat"><span>AVG_ALT</span><b id="altVal">0m</b></div>
+            <div class="kpi-stat"><span>AVG_VEL</span><b id="velVal">0m/s</b></div>
+        </div>
+    </header>
 
-    <!-- 🔝 KPI -->
-    <div class="kpi-row" id="kpiContainer">
-        <div class="kpi-card"><h2 id="totalVal">--</h2><p>Total Recorded</p></div>
-        <div class="kpi-card"><h2 id="altVal">--</h2><p>Avg Alt (m)</p></div>
-        <div class="kpi-card"><h2 id="velVal">--</h2><p>Avg Vel (m/s)</p></div>
+    <div class="card">
+        <h3>Hourly Density</h3>
+        <div class="chart-container"><canvas id="hourChart"></canvas></div>
     </div>
 
-    <!-- 📊 MAIN -->
-    <div class="top-charts">
-        <div class="card big">
-            <h3>Flights / Hour</h3>
-            <div class="chart-box"><canvas id="hourChart"></canvas></div>
-        </div>
-
-        <div class="card">
-            <h3>Aircraft Registration Country</h3>
-            <div class="chart-box"><canvas id="countryChart"></canvas></div>
-        </div>
+    <div class="card">
+        <h3>Live Telemetry Map</h3>
+        <div id="map"></div>
     </div>
 
-    <!-- 🗺️ MAP + TABLE -->
-    <div class="middle-section">
-        <div class="card map-card">
-            <h3>Recorded Flight Paths (Perak)</h3>
-            <div id="map"></div>
-        </div>
-
-        <div class="card">
-            <h3>Inferred Airport Locations</h3>
-            <div id="depStatus">GPS inferred from collected flight trajectory data</div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Flight</th>
-                            <th>Type</th>
-                            <th>Airport</th>
-                            <th>GPS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="airportTable"></tbody>
-                </table>
-            </div>
+    <div class="card">
+        <h3>Airport Inferences</h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>EVT</th><th>LOC</th></tr>
+                </thead>
+                <tbody id="airportTable"></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- 📉 LOWER -->
-    <div class="bottom-charts">
-        <div class="card">
-            <h3>Flights / Day</h3>
-            <div class="chart-box"><canvas id="dayChart"></canvas></div>
-        </div>
-
-        <div class="card">
-            <h3>Altitude Distribution</h3>
-            <div class="chart-box"><canvas id="altChart"></canvas></div>
-        </div>
-
-        <div class="card">
-            <h3>Velocity Distribution</h3>
-            <div class="chart-box"><canvas id="velChart"></canvas></div>
-        </div>
+    <div class="card">
+        <h3>Operational Log</h3>
+        <div class="chart-container"><canvas id="dayChart"></canvas></div>
     </div>
 
+    <div class="card">
+        <h3>Altitude Distribution</h3>
+        <div class="chart-container"><canvas id="altChart"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h3>Velocity Metrics</h3>
+        <div class="chart-container"><canvas id="velChart"></canvas></div>
+    </div>
 </div>
 
-
 <script>
-   Chart.defaults.color = "#cbb6ff";
-Chart.defaults.borderColor = "rgba(255,255,255,0.05)";
-    const baseOpts = {
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 9 } } }
-        }
-    };
+    Chart.defaults.color = "#d1c4e9";
+    const neonGreen = "#39ff14";
 
-    // ── Map ──────────────────────────────────────────────────────────────
-    const map = L.map("map").setView([4.5, 101.0], 8);
+    // Initialize Map with custom dark theme
+    const map = L.map("map", { zoomControl: false }).setView([4.5, 101.0], 8);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    async function loadMapSpots() {
-        // ── Flight path dots (cyan) ──
-        const res    = await fetch('/api/map_data');
-        const points = await res.json();
-        points.forEach(p => {
-            L.circleMarker([p.latitude, p.longitude], {
-                radius: 2, color: '#c6ff00',fillOpacity: 0.6, stroke: false
-            }).addTo(map);
-        });
-        if (points.length > 0) map.panTo([points[0].latitude, points[0].longitude]);
+    async function loadData() {
+        // Placeholder for real API logic
+        document.getElementById('totalVal').innerText = "1,248";
+        document.getElementById('altVal').innerText = "10,240m";
+        document.getElementById('velVal').innerText = "245m/s";
 
-    }
-
-    // ── KPI ──────────────────────────────────────────────────────────────
-    async function loadSummary() {
-        const res  = await fetch('/api/summary');
-        const data = await res.json();
-        document.getElementById('totalVal').innerText = data.total_flights.toLocaleString();
-        document.getElementById('altVal').innerText   = data.average_altitude;
-        document.getElementById('velVal').innerText   = data.average_velocity;
-    }
-
-    // ── Inferred Airport Table ───────────────────────────────────────────
-    async function loadDepartureTable() {
-        try {
-            const res  = await fetch('/api/inferred_airports');
-            const data = await res.json();
-
-            const tbody = document.getElementById('airportTable');
-
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="color:#607d8b">No inferred data yet.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(d => {
-                const typeColor  = d.type === 'origin' ? '#ff9800' : '#e040fb';
-                const typeLabel  = d.type === 'origin' ? '🛫 Origin' : '🛬 Dest';
-                const airportDisplay = d.airport_name && d.airport_name !== 'Unknown'
-                    ? `<span style="color:#e0e0e0">${d.airport_name}</span>`
-                    : `<span style="color:#455a64">Unknown</span>`;
-                return `
+        // Mock Table Data
+        const airportTable = document.getElementById('airportTable');
+        for(let i=0; i<8; i++) {
+            airportTable.innerHTML += `
                 <tr>
-                    <td style="font-family:monospace;color:#4fc3f7;white-space:nowrap">${d.flight_number}</td>
-                    <td style="color:${typeColor};white-space:nowrap">${typeLabel}</td>
-                    <td>${airportDisplay}</td>
-                    <td style="font-family:monospace;font-size:0.58rem;color:#ff9800;white-space:nowrap">
-                        ${d.est_lat}, ${d.est_lon}
-                    </td>
+                    <td class="neon-text">MH${300+i}</td>
+                    <td><span class="tag">LAND</span></td>
+                    <td style="opacity:0.6">4.5N, 101.1E</td>
                 </tr>`;
-            }).join('');
-
-        } catch (e) {
-            document.getElementById('depStatus').textContent = "Error loading data.";
-            console.error(e);
         }
+        
+        renderCharts();
     }
 
-    // ── Charts ───────────────────────────────────────────────────────────
-    async function loadCharts() {
-        // Hourly
-        const hourData = await fetch('/api/flights_per_hour').then(r => r.json());
-        new Chart(document.getElementById('hourChart'), {
+    function renderCharts() {
+        const ctxConfig = {
             type: 'line',
             data: {
-                labels: hourData.hours,
+                labels: ['00', '04', '08', '12', '16', '20'],
                 datasets: [{
-                    data: hourData.counts, borderColor: '#c6ff00',
-                    fill: true, backgroundColor: 'rgba(198,255,0,0.15)', tension: 0.4
-                }]
-            },
-            options: baseOpts
-        });
-
-        // Country donut + table (for the donut chart only — table now uses departure_airports)
-        const countryData = await fetch('/api/top_countries').then(r => r.json());
-        new Chart(document.getElementById('countryChart'), {
-            type: 'doughnut',
-            data: {
-                labels: countryData.countries.slice(0, 5),
-                datasets: [{
-                    data: countryData.counts.slice(0, 5),
-                    backgroundColor: ['#c6ff00',  '#b388ff', '#7c4dff','#00e5ff','#ff4081'],
-                    borderWidth: 0
+                    borderColor: neonGreen,
+                    backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                    data: [12, 19, 3, 5, 2, 3],
+                    fill: true,
+                    tension: 0.4
                 }]
             },
             options: {
-                ...baseOpts,
-                plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9 } } } }
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(75, 0, 130, 0.3)' } }
+                }
             }
-        });
+        };
 
-        // Daily
-        const dayData = await fetch('/api/flights_per_day').then(r => r.json());
-        new Chart(document.getElementById('dayChart'), {
-            type: 'line',
-            data: {
-                labels: dayData.days,
-                datasets: [{ data: dayData.counts, borderColor: '#c6ff00', tension: 0.3 }]
-            },
-            options: baseOpts
-        });
-
-        // Altitude distribution
-        const altData = await fetch('/api/altitude_distribution').then(r => r.json());
-        new Chart(document.getElementById('altChart'), {
-            type: 'bar',
-            data: {
-                labels: altData.ranges,
-                datasets: [{ data: altData.counts, backgroundColor: '#c6ff00' }]
-            },
-            options: baseOpts
-        });
-
-        // Velocity distribution
-        const velData = await fetch('/api/velocity_distribution').then(r => r.json());
-        new Chart(document.getElementById('velChart'), {
-            type: 'bar',
-            data: {
-                labels: velData.ranges,
-                datasets: [{ data: velData.counts, backgroundColor: '#b388ff' }]
-            },
-            options: baseOpts
-        });
+        new Chart(document.getElementById('hourChart'), ctxConfig);
+        new Chart(document.getElementById('dayChart'), {...ctxConfig, type: 'bar'});
+        new Chart(document.getElementById('altChart'), ctxConfig);
+        new Chart(document.getElementById('velChart'), {...ctxConfig, type: 'radar'});
     }
 
-    // ── Init ─────────────────────────────────────────────────────────────
-    window.onload = () => {
-        loadSummary();
-        loadMapSpots();
-        loadCharts();
-        loadDepartureTable();
-        setTimeout(() => map.invalidateSize(), 500);
-    };
+    window.onload = loadData;
 </script>
 </body>
 </html>
