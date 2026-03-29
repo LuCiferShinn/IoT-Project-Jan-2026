@@ -150,7 +150,7 @@ def fetch_real_departures_job():
 # ─────────────────────────────────────────────
 # 5.  ROUTES
 # ─────────────────────────────────────────────
-@app.route("/")
+@app.route("/", methods=["GET", "HEAD"])
 def home():
     return render_template("dashboard.html")
 
